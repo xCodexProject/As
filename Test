@@ -1,0 +1,125 @@
+-- ============================================================
+-- AUTO BELI BIBIT (NO SPAM VERSION)
+-- ReplicatedStorage > Remotes > TutorialRemotes > GetBibit
+-- ============================================================
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- ============================================================
+-- AMBIL REMOTE
+-- ============================================================
+
+local GetBibit = ReplicatedStorage
+    :WaitForChild("Remotes")
+    :WaitForChild("TutorialRemotes")
+    :WaitForChild("GetBibit")
+
+-- ============================================================
+-- STATE
+-- ============================================================
+
+local State = {
+    SelectedSeed = "Bibit Jagung",
+    Amount = 1,
+    Buying = false
+}
+
+-- ============================================================
+-- LOAD FLUENT UI
+-- ============================================================
+
+local Fluent = loadstring(game:HttpGet(
+    "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
+))()
+
+local Window = Fluent:CreateWindow({
+    Title = "Auto Beli Bibit",
+    SubTitle = "TutorialRemotes",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(500, 350),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.RightControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+}
+
+-- ============================================================
+-- UI
+-- ============================================================
+
+-- Pilih jenis bibit
+Tabs.Main:AddDropdown("SeedDropdown", {
+    Title = "Pilih Bibit",
+    Values = {"Bibit Jagung", "Bibit Padi"},
+    Default = "Bibit Jagung",
+    Callback = function(val)
+        State.SelectedSeed = val
+    end,
+})
+
+-- Pilih jumlah (max 99)
+Tabs.Main:AddSlider("AmountSlider", {
+    Title = "Jumlah (Max 99)",
+    Min = 1,
+    Max = 99,
+    Default = 1,
+    Rounding = 0,
+    Callback = function(val)
+        State.Amount = val
+    end,
+})
+
+local Status = Tabs.Main:AddParagraph({
+    Title = "Status",
+    Content = "Siap membeli..."
+})
+
+local function SetStatus(text)
+    Status:SetContent(text)
+end
+
+-- Tombol beli
+Tabs.Main:AddButton({
+    Title = "Beli Bibit",
+    Description = "Beli sesuai jumlah yang dipilih",
+    Callback = function()
+
+        if State.Buying then return end
+        State.Buying = true
+
+        SetStatus("Membeli " .. State.Amount .. " " .. State.SelectedSeed .. "...")
+
+        task.spawn(function()
+            for i = 1, State.Amount do
+                pcall(function()
+                    -- Jika server butuh argumen jenis bibit
+                    GetBibit:FireServer(State.SelectedSeed)
+                end)
+
+                task.wait(0.25) -- delay kecil biar aman
+            end
+
+            SetStatus("Selesai membeli ✅")
+            State.Buying = false
+        end)
+
+    end,
+})
+
+-- ============================================================
+-- NOTIFIKASI
+-- ============================================================
+
+Fluent:Notify({
+    Title = "Loaded ✅",
+    Content = "Auto Beli Bibit Siap Digunakan",
+    Duration = 4
+})
+
+Window:SelectTab(1)
