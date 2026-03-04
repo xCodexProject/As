@@ -11,7 +11,7 @@ local RequestShop = ReplicatedStorage
     :WaitForChild("RequestShop")
 
 local State = {
-    SelectedSeed = "Bibit Jagung",
+    SelectedSeed = "Bibit Padi",
     Amount = 1,
     Buying = false
 }
