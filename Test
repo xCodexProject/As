@@ -15,7 +15,7 @@ local LocalPlayer = Players.LocalPlayer
 local GetBibit = ReplicatedStorage
     :WaitForChild("Remotes")
     :WaitForChild("TutorialRemotes")
-    :WaitForChild("GetBibit")
+    :WaitForChild("RequestShop")
 
 -- ============================================================
 -- STATE
