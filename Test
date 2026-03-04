@@ -1,25 +1,14 @@
 -- ============================================================
--- AUTO BELI BIBIT (InvokeServer Version)
--- Format: InvokeServer("BUY", "Bibit Padi", 1)
+-- FIXED VERSION (BUY 1x1 LOOP)
 -- ============================================================
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local LocalPlayer = Players.LocalPlayer
-
--- ============================================================
--- AMBIL REMOTE FUNCTION
--- ============================================================
-
 local RequestShop = ReplicatedStorage
     :WaitForChild("Remotes")
     :WaitForChild("TutorialRemotes")
     :WaitForChild("RequestShop")
-
--- ============================================================
--- STATE
--- ============================================================
 
 local State = {
     SelectedSeed = "Bibit Jagung",
@@ -27,42 +16,29 @@ local State = {
     Buying = false
 }
 
--- ============================================================
--- LOAD FLUENT UI
--- ============================================================
-
 local Fluent = loadstring(game:HttpGet(
     "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
 ))()
 
 local Window = Fluent:CreateWindow({
     Title = "Shop Bibit",
-    SubTitle = "InvokeServer Mode",
-    TabWidth = 160,
     Size = UDim2.fromOffset(500, 350),
-    Acrylic = true,
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl
 })
 
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-}
+local Tab = Window:AddTab({ Title = "Main", Icon = "home" })
 
--- ============================================================
--- UI
--- ============================================================
-
-Tabs.Main:AddDropdown("SeedDropdown", {
+Tab:AddDropdown("SeedDropdown", {
     Title = "Pilih Bibit",
     Values = {"Bibit Jagung", "Bibit Padi"},
-    Default = "Bibit Jagung",
+    Default = "Bibit Padi",
     Callback = function(val)
         State.SelectedSeed = val
     end,
 })
 
-Tabs.Main:AddSlider("AmountSlider", {
+Tab:AddSlider("AmountSlider", {
     Title = "Jumlah (Max 99)",
     Min = 1,
     Max = 99,
@@ -73,7 +49,7 @@ Tabs.Main:AddSlider("AmountSlider", {
     end,
 })
 
-local Status = Tabs.Main:AddParagraph({
+local Status = Tab:AddParagraph({
     Title = "Status",
     Content = "Siap..."
 })
@@ -82,46 +58,42 @@ local function SetStatus(text)
     Status:SetContent(text)
 end
 
-Tabs.Main:AddButton({
+Tab:AddButton({
     Title = "Beli Bibit",
-    Description = "InvokeServer BUY",
     Callback = function()
 
         if State.Buying then return end
         State.Buying = true
 
-        SetStatus("Memproses pembelian...")
-
         task.spawn(function()
 
-            local success, result = pcall(function()
-                return RequestShop:InvokeServer(
-                    "BUY",
-                    State.SelectedSeed,
-                    State.Amount
-                )
-            end)
+            for i = 1, State.Amount do
 
-            if success then
-                SetStatus("Berhasil beli "
-                    .. State.Amount .. " "
-                    .. State.SelectedSeed .. " ✅")
-            else
-                SetStatus("Gagal membeli ❌")
-                warn(result)
+                local success, err = pcall(function()
+                    return RequestShop:InvokeServer(
+                        "BUY",
+                        State.SelectedSeed,
+                        1 -- selalu 1
+                    )
+                end)
+
+                if not success then
+                    warn(err)
+                    SetStatus("Error saat membeli ❌")
+                    break
+                end
+
+                SetStatus("Membeli " .. i .. "/" .. State.Amount)
+
+                task.wait(0.2) -- delay aman
             end
 
+            SetStatus("Selesai ✅")
             State.Buying = false
 
         end)
 
     end,
-})
-
-Fluent:Notify({
-    Title = "Loaded ✅",
-    Content = "Shop Bibit Siap Digunakan",
-    Duration = 4
 })
 
 Window:SelectTab(1)
