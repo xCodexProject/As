@@ -1,6 +1,6 @@
 -- ============================================================
--- AUTO BELI BIBIT (REQUESTSHOP VERSION)
--- ReplicatedStorage > Remotes > TutorialRemotes > RequestShop
+-- AUTO BELI BIBIT (InvokeServer Version)
+-- Format: InvokeServer("BUY", "Bibit Padi", 1)
 -- ============================================================
 
 local Players = game:GetService("Players")
@@ -9,7 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 -- ============================================================
--- AMBIL REMOTE
+-- AMBIL REMOTE FUNCTION
 -- ============================================================
 
 local RequestShop = ReplicatedStorage
@@ -37,7 +37,7 @@ local Fluent = loadstring(game:HttpGet(
 
 local Window = Fluent:CreateWindow({
     Title = "Shop Bibit",
-    SubTitle = "RequestShop Remote",
+    SubTitle = "InvokeServer Mode",
     TabWidth = 160,
     Size = UDim2.fromOffset(500, 350),
     Acrylic = true,
@@ -84,7 +84,7 @@ end
 
 Tabs.Main:AddButton({
     Title = "Beli Bibit",
-    Description = "Kirim request sesuai jumlah",
+    Description = "InvokeServer BUY",
     Callback = function()
 
         if State.Buying then return end
@@ -94,17 +94,23 @@ Tabs.Main:AddButton({
 
         task.spawn(function()
 
-            -- Kirim 1x request (tidak spam loop)
-            pcall(function()
-                -- FORMAT UMUM:
-                -- RequestShop:FireServer("Bibit Jagung", 10)
-
-                RequestShop:FireServer(State.SelectedSeed, State.Amount)
+            local success, result = pcall(function()
+                return RequestShop:InvokeServer(
+                    "BUY",
+                    State.SelectedSeed,
+                    State.Amount
+                )
             end)
 
-            task.wait(0.5)
+            if success then
+                SetStatus("Berhasil beli "
+                    .. State.Amount .. " "
+                    .. State.SelectedSeed .. " ✅")
+            else
+                SetStatus("Gagal membeli ❌")
+                warn(result)
+            end
 
-            SetStatus("Selesai membeli " .. State.Amount .. " " .. State.SelectedSeed .. " ✅")
             State.Buying = false
 
         end)
