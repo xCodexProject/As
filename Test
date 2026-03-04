@@ -1,5 +1,5 @@
 -- ============================================================
--- FIXED VERSION (BUY 1x1 LOOP)
+-- SMART SHOP SCRIPT (GET_LIST + BUY)
 -- ============================================================
 
 local Players = game:GetService("Players")
@@ -11,32 +11,75 @@ local RequestShop = ReplicatedStorage
     :WaitForChild("RequestShop")
 
 local State = {
-    SelectedSeed = "Bibit Padi",
+    SelectedItem = nil,
     Amount = 1,
-    Buying = false
+    Buying = false,
+    ShopList = {}
 }
+
+-- ============================================================
+-- LOAD FLUENT UI
+-- ============================================================
 
 local Fluent = loadstring(game:HttpGet(
     "https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"
 ))()
 
 local Window = Fluent:CreateWindow({
-    Title = "Shop Bibit",
-    Size = UDim2.fromOffset(500, 350),
+    Title = "Smart Shop",
+    Size = UDim2.fromOffset(520, 400),
     Theme = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl
 })
 
-local Tab = Window:AddTab({ Title = "Main", Icon = "home" })
+local Tab = Window:AddTab({ Title = "Shop", Icon = "shopping-cart" })
 
-Tab:AddDropdown("SeedDropdown", {
-    Title = "Pilih Bibit",
-    Values = {"Bibit Jagung", "Bibit Padi"},
-    Default = "Bibit Padi",
+-- ============================================================
+-- GET SHOP LIST
+-- ============================================================
+
+local function LoadShopList()
+
+    local success, result = pcall(function()
+        return RequestShop:InvokeServer("GET_LIST")
+    end)
+
+    if success and typeof(result) == "table" then
+        State.ShopList = result
+        return result
+    else
+        warn("Gagal ambil list:", result)
+        return {}
+    end
+end
+
+local ShopItems = LoadShopList()
+
+-- Extract nama item dari table
+local ItemNames = {}
+
+for _, item in pairs(ShopItems) do
+    if typeof(item) == "table" and item.Name then
+        table.insert(ItemNames, item.Name)
+    elseif typeof(item) == "string" then
+        table.insert(ItemNames, item)
+    end
+end
+
+-- ============================================================
+-- UI
+-- ============================================================
+
+local Dropdown = Tab:AddDropdown("ItemDropdown", {
+    Title = "Pilih Item",
+    Values = ItemNames,
+    Default = ItemNames[1],
     Callback = function(val)
-        State.SelectedSeed = val
+        State.SelectedItem = val
     end,
 })
+
+State.SelectedItem = ItemNames[1]
 
 Tab:AddSlider("AmountSlider", {
     Title = "Jumlah (Max 99)",
@@ -58,11 +101,17 @@ local function SetStatus(text)
     Status:SetContent(text)
 end
 
+-- ============================================================
+-- BUY BUTTON
+-- ============================================================
+
 Tab:AddButton({
-    Title = "Beli Bibit",
+    Title = "Beli Item",
     Callback = function()
 
         if State.Buying then return end
+        if not State.SelectedItem then return end
+
         State.Buying = true
 
         task.spawn(function()
@@ -72,20 +121,19 @@ Tab:AddButton({
                 local success, err = pcall(function()
                     return RequestShop:InvokeServer(
                         "BUY",
-                        State.SelectedSeed,
-                        1 -- selalu 1
+                        State.SelectedItem,
+                        1
                     )
                 end)
 
                 if not success then
                     warn(err)
-                    SetStatus("Error saat membeli ❌")
+                    SetStatus("Error saat beli ❌")
                     break
                 end
 
                 SetStatus("Membeli " .. i .. "/" .. State.Amount)
-
-                task.wait(0.2) -- delay aman
+                task.wait(0.2)
             end
 
             SetStatus("Selesai ✅")
@@ -93,6 +141,27 @@ Tab:AddButton({
 
         end)
 
+    end,
+})
+
+-- Reload Button
+Tab:AddButton({
+    Title = "Refresh Shop List",
+    Callback = function()
+
+        local newList = LoadShopList()
+        local newNames = {}
+
+        for _, item in pairs(newList) do
+            if typeof(item) == "table" and item.Name then
+                table.insert(newNames, item.Name)
+            elseif typeof(item) == "string" then
+                table.insert(newNames, item)
+            end
+        end
+
+        Dropdown:SetValues(newNames)
+        SetStatus("List diperbarui ✅")
     end,
 })
 
